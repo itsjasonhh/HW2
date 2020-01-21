@@ -14,7 +14,7 @@ data BExpr = BoolConst Bool
             | Less AExpr AExpr
             | Equal AExpr AExpr
              deriving (Show)
-
+type Var = String
 data AExpr = Var String
             | IntConst Integer
             | Neg AExpr
@@ -157,7 +157,7 @@ parseString str =
     Right r -> r
 
 type Val = Integer
-type Store = [(String,Val)]
+type Store = [(Var,Val)]
 evalA :: AExpr -> Store -> Integer
 evalA(IntConst n) s = n
 evalA(Var x) s = case lookup x s of
@@ -177,6 +177,10 @@ evalB(Less a1 a2) s = evalA a1 s < evalA a2 s
 evalB(Equal a1 a2) s = evalA a1 s == evalA a2 s
 
 evalStmt :: Stmt -> Store -> Store
+evalStmt(Skip) s = s
+evalStmt(Assign x a) s = (x,evalA a s):s
+evalStmt(While b s) r
+
 
 
 
