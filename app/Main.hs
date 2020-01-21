@@ -179,8 +179,14 @@ evalB(Equal a1 a2) s = evalA a1 s == evalA a2 s
 evalStmt :: Stmt -> Store -> Store
 evalStmt(Skip) s = s
 evalStmt(Assign x a) s = (x,evalA a s):s
-evalStmt(While b s) r
+evalStmt(While b st) s | evalB b s /= False = evalStmt(Seq [st,While b st]) s
+                       | otherwise  = s
 
+evalStmt(Seq []) s = s
+evalStmt(Seq(x:xs)) s = evalStmt(Seq xs) (evalStmt x s)
+
+evalStmt(If b st1 st2) s | evalB b s /= False = evalStmt st1 s
+                         | otherwise = evalStmt st2 s
 
 
 
