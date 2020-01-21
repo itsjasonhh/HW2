@@ -1,0 +1,5 @@
+.stack-work/
+HW2.cabal
+*~
+# Project exclude paths
+/out/
