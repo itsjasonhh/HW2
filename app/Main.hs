@@ -192,7 +192,8 @@ evalStmt(If b st1 st2) s | evalB b s /= False = evalStmt st1 s
 
 
 main = do
+  let s = [("x",0),("y",0)]
   input <- getLine
-  print (parseString input)
+  print (evalStmt (parseString input) s)
 
-
+--Maybe get rid deriving (Show) to stop the output, then print custom stuff when eval is called, while updating the stores
