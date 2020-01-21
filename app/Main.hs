@@ -1,3 +1,4 @@
+--Code taken from https://wiki.haskell.org/Parsing_a_simple_imperative_language
 module ParseWhile where
 import System.IO
 import Control.Monad
@@ -63,6 +64,7 @@ parens     = Token.parens     lexer -- parses surrounding parenthesis:
                                      --   parens p
                                      -- takes care of the parenthesis and
                                      -- uses p to parse what's inside them
+braces     = Token.braces     lexer
 integer    = Token.integer    lexer -- parses an integer
 semi       = Token.semi       lexer -- parses a semicolon
 whiteSpace = Token.whiteSpace lexer -- parses whitespace
@@ -71,6 +73,7 @@ whileParser :: Parser Stmt
 whileParser = whiteSpace >> statement
 statement :: Parser Stmt
 statement =   parens statement
+           <|> braces statement
            <|> sequenceOfStmt
 
 sequenceOfStmt =
@@ -157,3 +160,5 @@ parseString str =
 main = do
   input <- getLine
   print (parseString input)
+
+
