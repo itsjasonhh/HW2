@@ -8,22 +8,21 @@ import Text.ParserCombinators.Parsec.Language
 import qualified Text.ParserCombinators.Parsec.Token as Token
 data BExpr = BoolConst Bool
             | Not BExpr
-            | BBinary BBinOp BExpr BExpr
-            | RBinary RBinOp AExpr AExpr
+            | And BExpr BExpr
+            | Or BExpr BExpr
+            | Greater AExpr AExpr
+            | Less AExpr AExpr
+            | Equal AExpr AExpr
              deriving (Show)
 
-data BBinOp = And | Or deriving (Show)
-data RBinOp = Greater | Less | Equal deriving (Show)
 data AExpr = Var String
             | IntConst Integer
             | Neg AExpr
-            | ABinary ABinOp AExpr AExpr
+            | Add AExpr AExpr
+            | Subtract AExpr AExpr
+            | Multiply AExpr AExpr
             deriving (Show)
-data ABinOp = Add
-             | Subtract
-             | Multiply
-             | Divide
-             deriving (Show)
+
 
 data Stmt = Seq [Stmt]
            | Assign String AExpr
@@ -52,7 +51,7 @@ languageDef =
                                       , "and"
                                       , "or"
                                       ]
-            , Token.reservedOpNames = ["+", "-", "*", "/", ":=", "="
+            , Token.reservedOpNames = ["+", "-", "*", ":=", "="
                                       , "<", ">", "∧", "∨", "¬"
                                       ]
             }
@@ -121,15 +120,15 @@ bExpression :: Parser BExpr
 bExpression = buildExpressionParser bOperators bTerm
 
 aOperators = [ [Prefix (reservedOp "-"   >> return (Neg             ))          ]
-             , [Infix  (reservedOp "*"   >> return (ABinary Multiply)) AssocLeft,
-                Infix  (reservedOp "/"   >> return (ABinary Divide  )) AssocLeft]
-             , [Infix  (reservedOp "+"   >> return (ABinary Add     )) AssocLeft,
-                Infix  (reservedOp "-"   >> return (ABinary Subtract)) AssocLeft]
+             , [Infix  (reservedOp "*"   >> return (Multiply)) AssocLeft
+               ]
+             , [Infix  (reservedOp "+"   >> return (Add     )) AssocLeft,
+                Infix  (reservedOp "-"   >> return (Subtract)) AssocLeft]
               ]
 
 bOperators = [ [Prefix (reservedOp "¬" >> return (Not             ))          ]
-             , [Infix  (reservedOp "∧" >> return (BBinary And     )) AssocLeft,
-                Infix  (reservedOp "∨"  >> return (BBinary Or      )) AssocLeft]
+             , [Infix  (reservedOp "∧" >> return (And     )) AssocLeft,
+                Infix  (reservedOp "∨"  >> return (Or      )) AssocLeft]
              ]
 
 aTerm =  parens aExpression
@@ -145,7 +144,7 @@ rExpression =
   do a1 <- aExpression
      op <- relation
      a2 <- aExpression
-     return $ RBinary op a1 a2
+     return $ op a1 a2
 
 relation =   (reservedOp ">" >> return Greater)
          <|> (reservedOp "<" >> return Less)
@@ -156,6 +155,31 @@ parseString str =
   case parse whileParser "" str of
     Left e -> error $ show e
     Right r -> r
+
+type Val = Integer
+type Store = [(String,Val)]
+evalA :: AExpr -> Store -> Integer
+evalA(IntConst n) s = n
+evalA(Var x) s = case lookup x s of
+                Just v -> v
+evalA(Neg x) s = -(evalA x s)
+evalA(Add a1 a2) s = evalA a1 s + evalA a2 s
+evalA(Subtract a1 a2) s = evalA a1 s - evalA a2 s
+evalA(Multiply a1 a2) s = evalA a1 s * evalA a2 s
+
+evalB :: BExpr -> Store -> Bool
+evalB(BoolConst b) s = b
+evalB(Not b) s = not (evalB b s)
+evalB(And b1 b2) s = (evalB b1 s) && (evalB b2 s)
+evalB(Or b1 b2) s = (evalB b1 s) || (evalB b2 s)
+evalB(Greater a1 a2) s = evalA a1 s > evalA a2 s
+evalB(Less a1 a2) s = evalA a1 s < evalA a2 s
+evalB(Equal a1 a2) s = evalA a1 s == evalA a2 s
+
+evalStmt :: Stmt -> Store -> Store
+
+
+
 
 main = do
   input <- getLine
