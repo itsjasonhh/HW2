@@ -6,6 +6,11 @@ import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Expr
 import Text.ParserCombinators.Parsec.Language
 import qualified Text.ParserCombinators.Parsec.Token as Token
+import Data.Char (isSpace)
+
+import qualified Data.Map.Strict as Map
+
+rstrip = reverse . dropWhile isSpace . reverse
 data BExpr = BoolConst Bool
             | Not BExpr
             | And BExpr BExpr
@@ -190,10 +195,16 @@ evalStmt(If b st1 st2) s | evalB b s /= False = evalStmt st1 s
 
 
 
-
 main = do
-  let s = [("x",0),("y",0)]
   input <- getLine
-  print (evalStmt (parseString input) s)
+  let s=[]
+  let store = evalStmt (parseString input) s
+  let better_store = reverseList store
+  let mapStore = Map.fromList better_store
+  print mapStore
+
+reverseList [] = []
+reverseList (x:xs) = reverseList xs ++ [x]
 
 --Maybe get rid deriving (Show) to stop the output, then print custom stuff when eval is called, while updating the stores
+--Also need to take care of \n
