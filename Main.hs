@@ -44,6 +44,7 @@ languageDef =
             , Token.commentLine     = "//"
             , Token.identStart      = letter
             , Token.identLetter     = alphaNum
+            , Token.opLetter = oneOf "="
             , Token.reservedNames   = [ "if"
                                       , "then"
                                       , "else"
