@@ -1,5 +1,5 @@
 --Code taken from https://wiki.haskell.org/Parsing_a_simple_imperative_language
-module ParseWhile where
+module Main where
 import System.IO
 import Control.Monad
 import Text.ParserCombinators.Parsec
@@ -7,10 +7,9 @@ import Text.ParserCombinators.Parsec.Expr
 import Text.ParserCombinators.Parsec.Language
 import qualified Text.ParserCombinators.Parsec.Token as Token
 import Data.Char (isSpace)
-
+import Data.List
+import Data.String
 import qualified Data.Map.Strict as Map
-
-rstrip = reverse . dropWhile isSpace . reverse
 data BExpr = BoolConst Bool
             | Not BExpr
             | And BExpr BExpr
@@ -162,17 +161,19 @@ parseString str =
     Right r -> r
 
 type Val = Integer
-type Store = [(Var,Val)]
-evalA :: AExpr -> Store -> Integer
+evalA :: AExpr -> Map.Map String Integer -> Integer
 evalA(IntConst n) s = n
-evalA(Var x) s = case lookup x s of
-                Just v -> v
+evalA(Var x) s = case (Map.member x s) of
+                True -> s Map.! x
+                False -> do
+                  let s' = Map.insert x 0 s
+                  s' Map.! x
 evalA(Neg x) s = -(evalA x s)
 evalA(Add a1 a2) s = evalA a1 s + evalA a2 s
 evalA(Subtract a1 a2) s = evalA a1 s - evalA a2 s
 evalA(Multiply a1 a2) s = evalA a1 s * evalA a2 s
 
-evalB :: BExpr -> Store -> Bool
+evalB :: BExpr -> Map.Map String Integer -> Bool
 evalB(BoolConst b) s = b
 evalB(Not b) s = not (evalB b s)
 evalB(And b1 b2) s = (evalB b1 s) && (evalB b2 s)
@@ -181,9 +182,9 @@ evalB(Greater a1 a2) s = evalA a1 s > evalA a2 s
 evalB(Less a1 a2) s = evalA a1 s < evalA a2 s
 evalB(Equal a1 a2) s = evalA a1 s == evalA a2 s
 
-evalStmt :: Stmt -> Store -> Store
+evalStmt :: Stmt -> Map.Map String Integer -> Map.Map String Integer
 evalStmt(Skip) s = s
-evalStmt(Assign x a) s = (x,evalA a s):s
+evalStmt(Assign x a) s = Map.insert x (evalA a s) s
 evalStmt(While b st) s | evalB b s /= False = evalStmt(Seq [st,While b st]) s
                        | otherwise  = s
 
@@ -194,17 +195,25 @@ evalStmt(If b st1 st2) s | evalB b s /= False = evalStmt st1 s
                          | otherwise = evalStmt st2 s
 
 
-
-main = do
-  input <- getLine
-  let s=[]
-  let store = evalStmt (parseString input) s
-  let better_store = reverseList store
-  let mapStore = Map.fromList better_store
-  print mapStore
-
 reverseList [] = []
 reverseList (x:xs) = reverseList xs ++ [x]
+mapToString::Map.Map String Integer -> String
+mapToString m =  let f = \(k,v) -> k++ " → "++ show v in unlines $ map f $ Map.toList m
 
---Maybe get rid deriving (Show) to stop the output, then print custom stuff when eval is called, while updating the stores
---Also need to take care of \n
+toCommaSeparatedString :: [String] -> String
+toCommaSeparatedString = intercalate ", "
+
+
+main = do
+  input <- getContents
+  let input1 = lines input
+  let input2 = unlines input1
+  let s = Map.empty
+  let input' = parseString input2
+  let s' = evalStmt input' s
+  let pair = mapToString s'
+  let pair1 = lines pair
+  let pair2 = toCommaSeparatedString pair1
+  let printable = "{" ++ pair2 ++ "}"
+  putStrLn $ filter (/= '\n')printable
+
