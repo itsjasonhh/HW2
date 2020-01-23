@@ -25,6 +25,7 @@ data AExpr = Var String
             | Add AExpr AExpr
             | Subtract AExpr AExpr
             | Multiply AExpr AExpr
+            | Mod AExpr AExpr
             deriving (Show)
 
 
@@ -56,7 +57,8 @@ languageDef =
                                       , "or"
                                       ]
             , Token.reservedOpNames = ["+", "-", "*", ":=", "="
-                                      , "<", ">", "∧", "∨", "¬"
+                                      , "<", ">", "∧", "∨", "¬","%"
+
                                       ]
             }
 lexer = Token.makeTokenParser languageDef
@@ -124,7 +126,8 @@ bExpression :: Parser BExpr
 bExpression = buildExpressionParser bOperators bTerm
 
 aOperators = [ [Prefix (reservedOp "-"   >> return (Neg             ))          ]
-             , [Infix  (reservedOp "*"   >> return (Multiply)) AssocLeft
+             , [Infix  (reservedOp "*"   >> return (Multiply)) AssocLeft,
+                Infix  (reservedOp "%" >> return (Mod )) AssocLeft
                ]
              , [Infix  (reservedOp "+"   >> return (Add     )) AssocLeft,
                 Infix  (reservedOp "-"   >> return (Subtract)) AssocLeft]
@@ -172,6 +175,7 @@ evalA(Neg x) s = -(evalA x s)
 evalA(Add a1 a2) s = evalA a1 s + evalA a2 s
 evalA(Subtract a1 a2) s = evalA a1 s - evalA a2 s
 evalA(Multiply a1 a2) s = evalA a1 s * evalA a2 s
+evalA(Mod a1 a2) s = rem (evalA a1 s) (evalA a2 s)
 
 evalB :: BExpr -> Map.Map String Integer -> Bool
 evalB(BoolConst b) s = b
